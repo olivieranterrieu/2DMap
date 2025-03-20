@@ -100,15 +100,18 @@
             dessinerPointsEchantillon();
         }
 
-        function dessinerPointsEchantillon() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "green";
-            pointsEchantillon.forEach(point => {
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-                ctx.fill();
-            });
-        }
+       function dessinerPointsEchantillon() {
+    // Ne pas effacer toute la toile (canvas)
+    ctx.globalAlpha = 1.0;  // S'assurer que la transparence est réinitialisée avant de dessiner
+
+    // Dessiner uniquement les points verts sans effacer l'image et la cartographie
+    ctx.fillStyle = "green";
+    pointsEchantillon.forEach(point => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+}
 
         canvas.addEventListener("contextmenu", function(event) {
             event.preventDefault();
@@ -157,28 +160,27 @@
         }
 function drawImage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Calculer les nouvelles dimensions de l'image en respectant son rapport d'aspect
+
+    // Dessiner l'image de fond
     let imgAspect = img.width / img.height;
     let canvasAspect = canvas.width / canvas.height;
-
     let drawWidth, drawHeight;
 
     if (imgAspect > canvasAspect) {
-        // Si l'image est plus large que haute (en termes de rapport d'aspect)
         drawWidth = canvas.width;
         drawHeight = canvas.width / imgAspect;
     } else {
-        // Si l'image est plus haute que large
         drawHeight = canvas.height;
         drawWidth = canvas.height * imgAspect;
     }
 
-    // Centrer l'image dans le canvas
     let offsetX = (canvas.width - drawWidth) / 2;
     let offsetY = (canvas.height - drawHeight) / 2;
 
     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+    // Redessiner les points verts
+    dessinerPointsEchantillon();
 }
 
         function selectPoints() {
