@@ -139,7 +139,7 @@
 }
 
 
-        canvas.addEventListener("contextmenu", function(event) {
+ canvas.addEventListener("contextmenu", function(event) {
     event.preventDefault();  // Empêcher le menu contextuel par défaut du navigateur
 
     // Obtenir la position du clic
@@ -159,7 +159,7 @@
 
     // Si un point est sélectionné, afficher le menu contextuel à côté de ce point
     if (selectedPoint) {
-        // Déterminer le décalage de l'image pour ajuster la position du menu
+        // Déterminer les dimensions de l'image et son décalage
         let imgAspect = img.width / img.height;
         let canvasAspect = canvas.width / canvas.height;
 
@@ -177,9 +177,22 @@
         offsetX = (canvas.width - drawWidth) / 2;
         offsetY = (canvas.height - drawHeight) / 2;
 
-        // Calculer la position exacte du menu contextuel par rapport à l'image
+        // Calculer la position exacte du menu contextuel par rapport au canevas
         let menuX = selectedPoint.x + offsetX + 10;  // Décalage de 10px pour espacer le menu
         let menuY = selectedPoint.y + offsetY + 10;  // Décalage de 10px pour espacer le menu
+
+        // Vérifier que le menu ne dépasse pas du canevas
+        let menuWidth = contextMenu.offsetWidth;
+        let menuHeight = contextMenu.offsetHeight;
+
+        // Ajuster la position pour éviter que le menu dépasse du canevas
+        if (menuX + menuWidth > canvas.width) {
+            menuX = canvas.width - menuWidth - 10;
+        }
+
+        if (menuY + menuHeight > canvas.height) {
+            menuY = canvas.height - menuHeight - 10;
+        }
 
         // Positionner le menu contextuel à côté du point cliqué
         contextMenu.style.top = menuY + "px";
@@ -189,6 +202,7 @@
         contextMenu.style.display = "none";  // Si aucun point n'est sélectionné, cacher le menu
     }
 });
+
 
 
 
