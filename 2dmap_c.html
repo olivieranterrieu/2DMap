@@ -92,13 +92,38 @@
         }
 
         function placerPointEchantillon(event) {
-            if (!modeEchantillon) return;
-            let rect = canvas.getBoundingClientRect();
-            let x = event.clientX - rect.left;
-            let y = event.clientY - rect.top;
-            pointsEchantillon.push({ x, y, texte: "", document: null });
-            dessinerPointsEchantillon();
-        }
+    if (!modeEchantillon) return;
+
+    let rect = canvas.getBoundingClientRect();
+    let x = event.clientX - rect.left;
+    let y = event.clientY - rect.top;
+
+    // Vérifier si le clic est dans les limites de l'image
+    let imgAspect = img.width / img.height;
+    let canvasAspect = canvas.width / canvas.height;
+
+    let drawWidth, drawHeight, offsetX, offsetY;
+
+    // Calcul des dimensions et de la position de l'image
+    if (imgAspect > canvasAspect) {
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / imgAspect;
+    } else {
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * imgAspect;
+    }
+
+    offsetX = (canvas.width - drawWidth) / 2;
+    offsetY = (canvas.height - drawHeight) / 2;
+
+    // Vérifier si le clic est à l'intérieur de l'image
+    if (x >= offsetX && x <= offsetX + drawWidth && y >= offsetY && y <= offsetY + drawHeight) {
+        // Ajouter le point vert seulement si le clic est à l'intérieur de l'image
+        pointsEchantillon.push({ x, y, texte: "", document: null });
+        dessinerPointsEchantillon();
+    }
+}
+
 
        function dessinerPointsEchantillon() {
     // Ne pas effacer toute la toile (canvas)
@@ -195,9 +220,10 @@ function drawImage() {
 
     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
-    // Redessiner les points verts
+    // Redessiner les points verts par-dessus l'image
     dessinerPointsEchantillon();
 }
+
 
         function selectPoints() {
             selectedPoints = [];
