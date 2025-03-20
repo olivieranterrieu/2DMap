@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformation Perspective</title>
+       <script async src="https://unpkg.com/opencv.js" onload="onOpenCVLoaded()"></script>
+
+
+    <script>
+        function onOpenCVLoaded() {
+        console.log("OpenCV.js est chargé !");
+        // Maintenant tu peux utiliser cv ici
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        let img = new Image(), mapImg = new Image();
+        let selectedPoints = [], mapLoaded = false, imgLoaded = false;
+}
+
+    </script>
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; }
+        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        #controls { position: absolute; top: 10px; left: 10px; background: rgba(255, 255, 255, 0.8); padding: 10px; z-index: 10; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="file" id="photoInput" accept="image/*" style="display: none;">
+        <label for="photoInput" style="background-color: #4CAF50; color: white; padding: 10px; cursor: pointer;">Photo</label>
+        <input type="file" id="mapInput" accept="image/*" style="display: none;">
+        <label for="mapInput" style="background-color: #4CAF50; color: white; padding: 10px; cursor: pointer;">Cartographie</label>
+        <button onclick="selectPoints()">Sélectionner 4 points</button>
+        <button onclick="exportResult()">Exporter</button>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        let img = new Image(), mapImg = new Image();
+        let selectedPoints = [], mapLoaded = false, imgLoaded = false;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (imgLoaded) drawImage();
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+
+        document.getElementById("photoInput").addEventListener("change", function(event) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        });
+
+        img.onload = function() {
+            imgLoaded = true;
+            resizeCanvas();
+        };
+
+        document.getElementById("mapInput").addEventListener("change", function(event) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                mapImg.src = e.target.result;
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        });
+
+        mapImg.onload = function() {
+            mapLoaded = true;
+            console.log("Carte chargée avec succès");
+        };
+
+function drawImage() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculer les nouvelles dimensions de l'image en respectant son rapport d'aspect
+    let imgAspect = img.width / img.height;
+    let canvasAspect = canvas.width / canvas.height;
+
+    let drawWidth, drawHeight;
+
+    if (imgAspect > canvasAspect) {
+        // Si l'image est plus large que haute (en termes de rapport d'aspect)
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / imgAspect;
+    } else {
+        // Si l'image est plus haute que large
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * imgAspect;
+    }
+
+    // Centrer l'image dans le canvas
+    let offsetX = (canvas.width - drawWidth) / 2;
+    let offsetY = (canvas.height - drawHeight) / 2;
+
+    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+}
+
+        function selectPoints() {
+            selectedPoints = [];
+            canvas.addEventListener("click", getClickPosition);
+        }
+
+        function getClickPosition(event) {
+            let rect = canvas.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+            selectedPoints.push({ x, y });
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            if (selectedPoints.length === 4) {
+                canvas.removeEventListener("click", getClickPosition);
+                applyPerspectiveTransformation();
+            }
+        }
+
+        function applyPerspectiveTransformation() {
+            if (!mapLoaded || selectedPoints.length !== 4) {
+                console.error("Erreur : Carte non chargée ou 4 points non sélectionnés.");
+                return;
+            }
+
+            console.log("Application de la transformation de perspective...");
+
+            let mapCanvas = document.createElement("canvas");
+            let mapCtx = mapCanvas.getContext("2d");
+            mapCanvas.width = mapImg.width;
+            mapCanvas.height = mapImg.height;
+
+            mapCtx.drawImage(mapImg, 0, 0);
+            let imageData = mapCtx.getImageData(0, 0, mapCanvas.width, mapCanvas.height);
+            console.log("ImageData récupéré :", imageData);
+
+            // S'assurer qu'OpenCV est bien chargé
+            if (typeof cv.matFromImageData === 'undefined') {
+                console.error("La méthode cv.matFromImageData est introuvable. OpenCV.js n'est pas chargé correctement.");
+                return;
+            }
+
+            let imgMat = cv.matFromImageData(imageData); // Utilise cv.matFromImageData
+
+            let dstMat = new cv.Mat(mapImg.height, mapImg.width, cv.CV_8UC4);
+
+            let srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                0, 0,
+                mapImg.width, 0,
+                mapImg.width, mapImg.height,
+                0, mapImg.height
+            ]);
+            let dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [].concat(...selectedPoints.map(p => [p.x, p.y])));
+
+            let transformMatrix = cv.getPerspectiveTransform(srcPts, dstPts);
+            let dsize = new cv.Size(canvas.width, canvas.height);
+
+            cv.warpPerspective(imgMat, dstMat, transformMatrix, dsize);
+
+            let overlayCanvas = document.createElement("canvas");
+            overlayCanvas.width = canvas.width;
+            overlayCanvas.height = canvas.height;
+            let overlayCtx = overlayCanvas.getContext("2d");
+
+            let overlayImageData = new ImageData(new Uint8ClampedArray(dstMat.data), canvas.width, canvas.height);
+            overlayCtx.putImageData(overlayImageData, 0, 0);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawImage();
+            ctx.globalAlpha = 0.5;
+            ctx.drawImage(overlayCanvas, 0, 0);
+            ctx.globalAlpha = 1.0;
+
+            imgMat.delete();
+            dstMat.delete();
+            srcPts.delete();
+            dstPts.delete();
+            transformMatrix.delete();
+
+            console.log("Transformation appliquée avec succès !");
+        }
+
+        function exportResult() {
+            let link = document.createElement("a");
+            link.download = "result.png";
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
