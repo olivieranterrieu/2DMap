@@ -138,7 +138,8 @@
     });
 }
 
-canvas.addEventListener("contextmenu", function(event) {
+
+        canvas.addEventListener("contextmenu", function(event) {
     event.preventDefault();  // Empêcher le menu contextuel par défaut du navigateur
 
     // Obtenir la position du clic
@@ -146,7 +147,7 @@ canvas.addEventListener("contextmenu", function(event) {
     let x = event.clientX - rect.left;
     let y = event.clientY - rect.top;
 
-    // Vérifier si le clic est sur l'un des points
+    // Vérifier si le clic est sur un des points verts
     selectedPoint = null;
     for (let i = 0; i < pointsEchantillon.length; i++) {
         let point = pointsEchantillon[i];
@@ -156,15 +157,39 @@ canvas.addEventListener("contextmenu", function(event) {
         }
     }
 
-    // Si un point est sélectionné, afficher le menu contextuel
+    // Si un point est sélectionné, afficher le menu contextuel à côté de ce point
     if (selectedPoint) {
-        contextMenu.style.top = event.clientY + "px";  // Positionner le menu au clic
-        contextMenu.style.left = event.clientX + "px"; 
+        // Déterminer le décalage de l'image pour ajuster la position du menu
+        let imgAspect = img.width / img.height;
+        let canvasAspect = canvas.width / canvas.height;
+
+        let drawWidth, drawHeight, offsetX, offsetY;
+
+        // Calcul des dimensions et de la position de l'image
+        if (imgAspect > canvasAspect) {
+            drawWidth = canvas.width;
+            drawHeight = canvas.width / imgAspect;
+        } else {
+            drawHeight = canvas.height;
+            drawWidth = canvas.height * imgAspect;
+        }
+
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = (canvas.height - drawHeight) / 2;
+
+        // Calculer la position exacte du menu contextuel par rapport à l'image
+        let menuX = selectedPoint.x + offsetX + 10;  // Décalage de 10px pour espacer le menu
+        let menuY = selectedPoint.y + offsetY + 10;  // Décalage de 10px pour espacer le menu
+
+        // Positionner le menu contextuel à côté du point cliqué
+        contextMenu.style.top = menuY + "px";
+        contextMenu.style.left = menuX + "px";
         contextMenu.style.display = "block";
     } else {
         contextMenu.style.display = "none";  // Si aucun point n'est sélectionné, cacher le menu
     }
 });
+
 
 
         document.addEventListener("click", function() {
